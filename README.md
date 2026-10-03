@@ -1,8 +1,8 @@
-# Dashboard commerciale per l'azienda dei tappeti
+# Dashboard commerciale per Ferreira de Sá
 
-Idea nata dalla chiacchierata del 2 ottobre 2026 con un compagno del master che
-segue l'implementazione dei processi commerciali in un'azienda di tappeti di design
-(nella trascrizione si sente «Ferreira», nome da verificare). A che punto è: c'è un
+Idea nata dalla chiacchierata del 2 ottobre 2026 con Gabriele Contin, compagno del
+master, che segue l'implementazione dei processi commerciali in Ferreira de Sá,
+tappeti di design. A che punto è: c'è un
 prototipo con dati finti (`prototipo.html`) da fargli vedere. Lui ha detto che, se
 trova il pilota, l'azienda può pagare delle ore di lavoro per farlo insieme.
 
@@ -55,5 +55,8 @@ pagina, sempre uguali.
 3. Poi collegarsi a Dynamics direttamente (Dataverse Web API), oppure lasciare la
    dashboard dentro Power BI se l'azienda lo usa già.
 
-Da chiarire con lui: chi è il compagno e l'azienda esatta, se usano Dynamics 365
-Sales o un altro modulo, e chi pagherebbe il pilota.
+Da chiarire con Gabriele: se usano Dynamics 365 Sales o un altro modulo, chi
+pagherebbe il pilota e quante ore.
+
+Il prototipo è online su https://culla-beta.vercel.app/dashboard-tappeti/prototipo.html
+(dati finti, si può girare a Gabriele).
