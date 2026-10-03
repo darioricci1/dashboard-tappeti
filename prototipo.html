@@ -1,0 +1,210 @@
+<!doctype html>
+<!--
+  dashboard-tappeti/prototipo.html
+  version: 0.1.0
+  Prototipo della dashboard commerciale per l'azienda dei tappeti: il funnel
+  visite -> contatti -> progetti -> quotati -> vinti -> fatturato, con i tassi di
+  conversione per canale, area e commerciale, i progetti con clienti nuovi o gia'
+  clienti e il tempo del richiamo dopo il preventivo. DATI FINTI, generati qui sotto:
+  servono a far vedere la forma, i numeri veri arriveranno da Dynamics.
+-->
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funnel commerciale tappeti</title>
+<style>
+  :root{
+    color-scheme:light;
+    --sfondo:#f4f4f2; --carta:#fcfcfb; --bordo:#e2e1dc; --testo:#0b0b0b; --testo-2:#52514e; --muto:#8a8983;
+    --serie-1:#2a78d6; --serie-2:#eb6834; --traccia:#ecebe6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --sfondo:#121211; --carta:#1a1a19; --bordo:#33332f; --testo:#fff; --testo-2:#c3c2b7; --muto:#8f8e86;
+      --serie-1:#3987e5; --serie-2:#d95926; --traccia:#2a2a27;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --sfondo:#121211; --carta:#1a1a19; --bordo:#33332f; --testo:#fff; --testo-2:#c3c2b7; --muto:#8f8e86;
+    --serie-1:#3987e5; --serie-2:#d95926; --traccia:#2a2a27;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--sfondo);color:var(--testo);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+  h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:0 0 2px}
+  .nota{color:var(--testo-2);font-size:13px;margin:0 0 14px}
+  .avviso{display:inline-block;background:var(--traccia);color:var(--testo-2);border-radius:6px;padding:2px 8px;font-size:12px}
+  .filtri{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+  .filtri label{font-size:12px;color:var(--testo-2);display:flex;flex-direction:column;gap:3px}
+  select{font:inherit;padding:6px 8px;border:1px solid var(--bordo);border-radius:6px;background:var(--carta);color:var(--testo);min-width:150px}
+  .tessere{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .tessera,.riquadro{background:var(--carta);border:1px solid var(--bordo);border-radius:10px;padding:12px 14px}
+  .tessera .v{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums}
+  .tessera .e{font-size:12px;color:var(--testo-2)}
+  .griglia{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:760px){.griglia{grid-template-columns:1fr}}
+  .riga{display:grid;grid-template-columns:110px 1fr 120px;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+  .riga .et{color:var(--testo-2)} .riga .num{text-align:right;font-variant-numeric:tabular-nums;color:var(--testo)}
+  .barra{height:18px;background:var(--traccia);border-radius:4px;position:relative}
+  .barra i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--serie-1)}
+  .conv{font-size:12px;color:var(--muto);margin:-3px 0 0 120px}
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--bordo);text-align:right}
+  th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
+  th{color:var(--testo-2);font-weight:600;cursor:pointer;white-space:nowrap}
+  .scorre{overflow-x:auto}
+  .legenda{display:flex;gap:14px;font-size:12px;color:var(--testo-2);margin:6px 0}
+  .legenda span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+  .coppia{display:flex;flex-direction:column;gap:2px}
+  .coppia .barra{height:12px}
+  .coppia .barra.b i{background:var(--serie-2)}
+  #tip{position:fixed;pointer-events:none;background:var(--carta);border:1px solid var(--bordo);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;z-index:9}
+  .sotto{margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Funnel commerciale</h1>
+  <p class="nota"><span class="avviso">Dati finti</span> Prototipo per far vedere la forma della dashboard. I numeri veri arrivano da Dynamics (visite, lead, opportunità, offerte, ordini).</p>
+
+  <div class="filtri">
+    <label>Canale<select id="f-canale"></select></label>
+    <label>Area<select id="f-area"></select></label>
+    <label>Commerciale<select id="f-comm"></select></label>
+    <label>Periodo<select id="f-periodo"><option value="12">Ultimi 12 mesi</option><option value="6">Ultimi 6 mesi</option><option value="3">Ultimi 3 mesi</option></select></label>
+  </div>
+
+  <div class="tessere" id="tessere"></div>
+
+  <div class="griglia">
+    <section class="riquadro">
+      <h2>Il funnel</h2>
+      <p class="nota">Da ogni gradino al successivo, la percentuale che passa.</p>
+      <div id="funnel"></div>
+    </section>
+    <section class="riquadro">
+      <h2>Clienti nuovi o già clienti</h2>
+      <p class="nota">Progetti aperti e quota vinta. Tanti progetti con la stessa gente e pochi vinti sono il segnale da guardare.</p>
+      <div class="legenda"><span style="--c:var(--serie-1)">Già clienti</span><span style="--c:var(--serie-2)">Nuovi</span></div>
+      <div id="nuovi"></div>
+    </section>
+  </div>
+
+  <section class="riquadro sotto">
+    <h2>Quando richiamare dopo il preventivo</h2>
+    <p class="nota">Quota di preventivi vinti secondo quanti giorni dopo l'invio è arrivato il primo richiamo. È la base per un promemoria in Dynamics fissato sui dati invece che a sensazione.</p>
+    <div id="recall"></div>
+  </section>
+
+  <section class="riquadro sotto">
+    <h2>Per commerciale</h2>
+    <p class="nota">Clic sull'intestazione per ordinare.</p>
+    <div class="scorre"><table id="tab"></table></div>
+  </section>
+</main>
+<div id="tip"></div>
+<script>
+const CANALI = ["Progetti (architetti e designer)", "Rivenditori", "Partner (produzione per grandi marchi)", "Online"];
+const AREE = ["Italia", "Europa", "Medio Oriente", "Nord America", "Asia"];
+const COMM = [["Marco", "Italia"], ["Giulia", "Italia"], ["Pedro", "Europa"], ["Ana", "Europa"], ["Karim", "Medio Oriente"], ["Lisa", "Nord America"], ["Kenji", "Asia"]];
+const RECALL = ["1-3 giorni", "4-7 giorni", "8-14 giorni", "15-30 giorni", "oltre 30", "mai"];
+const QUOTA_RECALL = [0.38, 0.33, 0.24, 0.17, 0.11, 0.07];
+
+// Generatore con seme: i dati finti restano uguali a ogni apertura.
+let seme = 11;
+const caso = () => (seme = (seme * 16807) % 2147483647) / 2147483647;
+
+const progetti = [], visite = [];
+for (let m = 0; m < 12; m++) {
+  for (const [nome, area] of COMM) {
+    visite.push({ mese: m, comm: nome, area, n: 8 + Math.round(caso() * 14), contatti: 0 });
+    const v = visite[visite.length - 1];
+    v.contatti = Math.round(v.n * (0.5 + caso() * 0.4));
+    const nProg = Math.round(v.contatti * (0.25 + caso() * 0.3));
+    for (let i = 0; i < nProg; i++) {
+      const canale = CANALI[Math.min(3, Math.floor(caso() * caso() * 5))];
+      const nuovo = caso() < 0.45;
+      const quotato = caso() < 0.7;
+      const r = Math.floor(caso() * 6);
+      const pVinta = (nuovo ? 0.8 : 1.1) * QUOTA_RECALL[r] * (nome === "Giulia" ? 0.6 : 1);
+      const vinto = quotato && caso() < pVinta * 1.6;
+      const valore = Math.round((canale.startsWith("Partner") ? 60000 : canale === "Online" ? 3000 : 18000) * (0.4 + caso() * 1.4));
+      progetti.push({ mese: m, comm: nome, area, canale, nuovo, quotato, recall: quotato ? r : null, vinto, valore: vinto ? valore : 0 });
+    }
+  }
+}
+
+const $ = (id) => document.getElementById(id);
+const opzioni = (sel, voci) => { sel.innerHTML = `<option value="">Tutti</option>` + voci.map((v) => `<option>${v}</option>`).join(""); };
+opzioni($("f-canale"), CANALI); opzioni($("f-area"), AREE); opzioni($("f-comm"), COMM.map((c) => c[0]));
+const n = (x) => x.toLocaleString("it-IT");
+const euro = (x) => x >= 1e6 ? "€ " + (x / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 2 }) + " mln" : "€ " + Math.round(x / 1000).toLocaleString("it-IT") + "k";
+const pc = (a, b) => b ? Math.round((a / b) * 100) + "%" : "–";
+
+const tip = $("tip");
+document.addEventListener("pointermove", (e) => {
+  const t = e.target.closest("[data-tip]");
+  if (!t) { tip.style.display = "none"; return; }
+  tip.innerHTML = t.dataset.tip; tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = e.clientY + 12 + "px";
+});
+
+let ordine = { col: "fatturato", giu: true };
+
+function disegna() {
+  const c = $("f-canale").value, a = $("f-area").value, k = $("f-comm").value, mesi = +$("f-periodo").value;
+  const okBase = (r) => r.mese >= 12 - mesi && (!a || r.area === a) && (!k || r.comm === k);
+  const P = progetti.filter((p) => okBase(p) && (!c || p.canale === c));
+  // Visite e contatti non hanno canale: col filtro canale si mostrano per intero.
+  const V = visite.filter(okBase);
+  const vis = V.reduce((s, v) => s + v.n, 0), con = V.reduce((s, v) => s + v.contatti, 0);
+  const quo = P.filter((p) => p.quotato).length, vin = P.filter((p) => p.vinto).length;
+  const fat = P.reduce((s, p) => s + p.valore, 0);
+
+  $("tessere").innerHTML = [
+    ["Fatturato vinto", euro(fat)], ["Progetti", n(P.length)], ["Conversione progetti → vinti", pc(vin, P.length)],
+    ["Valore medio vinto", vin ? euro(fat / vin) : "–"], ["Visite", n(vis)],
+  ].map(([e, v]) => `<div class="tessera"><div class="e">${e}</div><div class="v">${v}</div></div>`).join("");
+
+  const passi = [["Visite", vis], ["Contatti", con], ["Progetti", P.length], ["Quotati", quo], ["Vinti", vin]];
+  $("funnel").innerHTML = passi.map(([e, v], i) => {
+    const conv = i ? `<div class="conv">${pc(v, passi[i - 1][1])} da ${passi[i - 1][0].toLowerCase()}</div>` : "";
+    return conv + `<div class="riga"><span class="et">${e}</span><div class="barra" data-tip="<b>${e}</b>: ${n(v)}"><i style="width:${(v / passi[0][1]) * 100}%"></i></div><span class="num">${n(v)}</span></div>`;
+  }).join("") + `<div class="riga"><span class="et">Fatturato</span><span></span><span class="num"><b>${euro(fat)}</b></span></div>`;
+
+  const gruppi = [["Già clienti", P.filter((p) => !p.nuovo)], ["Nuovi", P.filter((p) => p.nuovo)]];
+  const maxP = Math.max(...gruppi.map((g) => g[1].length), 1);
+  $("nuovi").innerHTML = ["Progetti", "Vinti"].map((m) => `<div class="riga"><span class="et">${m}</span><div class="coppia">${
+    gruppi.map(([e, g], i) => { const v = m === "Progetti" ? g.length : g.filter((p) => p.vinto).length;
+      return `<div class="barra ${i ? "b" : ""}" data-tip="<b>${e}</b>: ${n(v)} ${m.toLowerCase()}"><i style="width:${(v / maxP) * 100}%"></i></div>`; }).join("")
+  }</div><span class="num">${gruppi.map(([, g]) => n(m === "Progetti" ? g.length : g.filter((p) => p.vinto).length)).join(" · ")}</span></div>`).join("")
+  + `<div class="riga"><span class="et">Conversione</span><span></span><span class="num">${gruppi.map(([, g]) => pc(g.filter((p) => p.vinto).length, g.length)).join(" · ")}</span></div>`;
+
+  const Q = P.filter((p) => p.quotato);
+  const perR = RECALL.map((e, i) => { const g = Q.filter((p) => p.recall === i); return [e, g.length, g.filter((p) => p.vinto).length]; });
+  const maxR = Math.max(...perR.map(([, t, v]) => t ? v / t : 0), 0.01);
+  $("recall").innerHTML = perR.map(([e, t, v]) => `<div class="riga"><span class="et">${e}</span><div class="barra" data-tip="<b>Richiamo ${e}</b><br>${n(v)} vinti su ${n(t)} preventivi"><i style="width:${t ? (v / t / maxR) * 100 : 0}%"></i></div><span class="num">${pc(v, t)} <span style="color:var(--muto)">su ${n(t)}</span></span></div>`).join("");
+
+  const righe = COMM.filter(([nome, area]) => (!a || area === a) && (!k || nome === k)).map(([nome, area]) => {
+    const p = P.filter((x) => x.comm === nome), v = V.filter((x) => x.comm === nome);
+    const vi = v.reduce((s, x) => s + x.n, 0), vinti = p.filter((x) => x.vinto).length;
+    return { nome, area, visite: vi, progetti: p.length, prog_visita: vi ? p.length / vi : 0, conv: p.length ? vinti / p.length : 0,
+      nuovi: p.length ? p.filter((x) => x.nuovo).length / p.length : 0, fatturato: p.reduce((s, x) => s + x.valore, 0) };
+  });
+  const col = [["nome", "Commerciale"], ["area", "Area"], ["visite", "Visite"], ["progetti", "Progetti"], ["prog_visita", "Progetti per visita"], ["conv", "Conversione"], ["nuovi", "Quota nuovi"], ["fatturato", "Fatturato"]];
+  righe.sort((x, y) => { const A = x[ordine.col], B = y[ordine.col]; return (A > B ? 1 : A < B ? -1 : 0) * (ordine.giu ? -1 : 1); });
+  const fmt = (c, v) => c === "fatturato" ? euro(v) : ["conv", "nuovi"].includes(c) ? Math.round(v * 100) + "%" : c === "prog_visita" ? v.toFixed(2).replace(".", ",") : typeof v === "number" ? n(v) : v;
+  $("tab").innerHTML = `<thead><tr>${col.map(([c, e]) => `<th data-col="${c}">${e}${ordine.col === c ? (ordine.giu ? " ↓" : " ↑") : ""}</th>`).join("")}</tr></thead><tbody>${
+    righe.map((r) => `<tr>${col.map(([c]) => `<td>${fmt(c, r[c])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+$("tab").addEventListener("click", (e) => { const th = e.target.closest("th"); if (!th) return;
+  ordine = { col: th.dataset.col, giu: ordine.col === th.dataset.col ? !ordine.giu : true }; disegna(); });
+document.querySelectorAll("select").forEach((s) => s.addEventListener("change", disegna));
+disegna();
+</script>
+</body>
+</html>
