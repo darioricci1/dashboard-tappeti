@@ -3,7 +3,8 @@
 Idea nata dalla chiacchierata del 2 ottobre 2026 con Gabriele Contin, compagno del
 master, che segue l'implementazione dei processi commerciali in Ferreira de Sá,
 tappeti di design. A che punto è: c'è un
-prototipo con dati finti (`prototipo.html`) da fargli vedere. Lui ha detto che, se
+prototipo con dati finti da fargli vedere, online su
+https://ferreira-funnel.vercel.app (progetto Vercel `ferreira-funnel`). Lui ha detto che, se
 trova il pilota, l'azienda può pagare delle ore di lavoro per farlo insieme.
 
 ## Cosa è emerso
@@ -39,7 +40,8 @@ trova il pilota, l'azienda può pagare delle ore di lavoro per farlo insieme.
 
 ## Il prototipo
 
-`prototipo.html` si apre nel browser, senza server. Ha i filtri per canale, area,
+`public/index.html` è tutto il sito: una pagina sola, senza server, che si apre anche
+dal disco. Ha i filtri per canale, area,
 commerciale e periodo, le tessere in alto, il funnel con la percentuale tra un
 gradino e l'altro, il confronto clienti nuovi o già clienti, la conversione per
 giorni di richiamo e la tabella per commerciale. I dati sono finti e generati nella
@@ -58,5 +60,4 @@ pagina, sempre uguali.
 Da chiarire con Gabriele: se usano Dynamics 365 Sales o un altro modulo, chi
 pagherebbe il pilota e quante ore.
 
-Il prototipo è online su https://culla-beta.vercel.app/dashboard-tappeti/prototipo.html
-(dati finti, si può girare a Gabriele).
+Il sito si ricostruisce solo quando cambia questa cartella.
