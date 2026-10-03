@@ -42,7 +42,10 @@ trova il pilota, l'azienda può pagare delle ore di lavoro per farlo insieme.
 
 `public/index.html` è tutto il sito: una pagina sola, senza server, che si apre anche
 dal disco. Ha i filtri per canale, area,
-commerciale e periodo, le tessere in alto, il funnel con la percentuale tra un
+commerciale e periodo (fino all'ultimo mese), le tessere in alto con il confronto
+col migliore commerciale su ciascun KPI (il migliore cambia da KPI a KPI, e su
+conversione e valore medio conta solo chi ha almeno 5 progetti), i grafici dei 12
+mesi (con la media della squadra tratteggiata quando si guarda un commerciale), il funnel con la percentuale tra un
 gradino e l'altro, il confronto clienti nuovi o già clienti, la conversione per
 giorni di richiamo e la tabella per commerciale. I dati sono finti e generati nella
 pagina, sempre uguali.

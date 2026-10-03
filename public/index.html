@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   dashboard-tappeti/public/index.html
-  version: 0.2.0
+  version: 0.3.0
   Prototipo della dashboard commerciale per Ferreira de Sá (tappeti): il funnel
   visite -> contatti -> progetti -> quotati -> vinti -> fatturato, con i tassi di
   conversione per canale, area e commerciale, i progetti con clienti nuovi o gia'
@@ -63,6 +63,18 @@
   .coppia .barra.b i{background:var(--serie-2)}
   #tip{position:fixed;pointer-events:none;background:var(--carta);border:1px solid var(--bordo);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);display:none;z-index:9}
   .sotto{margin-top:14px}
+  .tessera .b{font-size:12px;color:var(--muto);margin-top:2px}
+  .tessera .b b{color:var(--testo-2);font-weight:600}
+  .andamenti{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:6px}
+  .andamento h3{font-size:13px;font-weight:600;color:var(--testo-2);margin:0 0 4px}
+  .andamento svg{width:100%;height:auto;display:block;overflow:visible}
+  .andamento text{fill:var(--muto);font-size:9px}
+  .andamento .griglia-l{stroke:var(--bordo);stroke-width:1}
+  .andamento .linea{fill:none;stroke:var(--serie-1);stroke-width:2;stroke-linejoin:round}
+  .andamento .rif{fill:none;stroke:var(--muto);stroke-width:1.5;stroke-dasharray:3 3}
+  .andamento .ultimo{fill:var(--serie-1);stroke:var(--carta);stroke-width:2}
+  .andamento .zona{fill:transparent}
+  .legenda .rif-l::before{background:none;border-top:2px dashed var(--muto);height:0;border-radius:0;vertical-align:3px}
 </style>
 </head>
 <body>
@@ -74,10 +86,17 @@
     <label>Canale<select id="f-canale"></select></label>
     <label>Area<select id="f-area"></select></label>
     <label>Commerciale<select id="f-comm"></select></label>
-    <label>Periodo<select id="f-periodo"><option value="12">Ultimi 12 mesi</option><option value="6">Ultimi 6 mesi</option><option value="3">Ultimi 3 mesi</option></select></label>
+    <label>Periodo<select id="f-periodo"><option value="12">Ultimi 12 mesi</option><option value="6">Ultimi 6 mesi</option><option value="3">Ultimi 3 mesi</option><option value="1">Ultimo mese</option></select></label>
   </div>
 
   <div class="tessere" id="tessere"></div>
+
+  <section class="riquadro" style="margin-bottom:14px">
+    <h2>Andamento degli ultimi 12 mesi</h2>
+    <p class="nota">Mese per mese, con i filtri di canale, area e commerciale (il periodo qui non conta). Passa sopra un grafico per leggere il mese.</p>
+    <div class="legenda" id="leg-and"></div>
+    <div class="andamenti" id="andamenti"></div>
+  </section>
 
   <div class="griglia">
     <section class="riquadro">
@@ -110,6 +129,7 @@
 const CANALI = ["Progetti (architetti e designer)", "Rivenditori", "Partner (produzione per grandi marchi)", "Online"];
 const AREE = ["Italia", "Europa", "Medio Oriente", "Nord America", "Asia"];
 const COMM = [["Marco", "Italia"], ["Giulia", "Italia"], ["Pedro", "Europa"], ["Ana", "Europa"], ["Karim", "Medio Oriente"], ["Lisa", "Nord America"], ["Kenji", "Asia"]];
+const MESI = ["ott", "nov", "dic", "gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set"];   // da ottobre 2025 a settembre 2026
 const RECALL = ["1-3 giorni", "4-7 giorni", "8-14 giorni", "15-30 giorni", "oltre 30", "mai"];
 const QUOTA_RECALL = [0.38, 0.33, 0.24, 0.17, 0.11, 0.07];
 
@@ -154,6 +174,36 @@ document.addEventListener("pointermove", (e) => {
 
 let ordine = { col: "fatturato", giu: true };
 
+// I piccoli grafici dei 12 mesi: una linea per KPI con i filtri scelti e, se si
+// guarda un commerciale, la media per commerciale della squadra tratteggiata.
+function disegnaAndamenti(c, a, k) {
+  const squadra = COMM.filter(([, ar]) => !a || ar === a).map(([nome]) => nome);
+  const serie = (chi) => MESI.map((_, m) => {
+    const p = progetti.filter((x) => x.mese === m && chi.includes(x.comm) && (!c || x.canale === c));
+    const v = visite.filter((x) => x.mese === m && chi.includes(x.comm));
+    const vinti = p.filter((x) => x.vinto).length, d = chi.length;
+    return { fat: p.reduce((t, x) => t + x.valore, 0) / d, prog: p.length / d, conv: p.length ? vinti / p.length : 0, vis: v.reduce((t, x) => t + x.n, 0) / d };
+  });
+  const mia = serie(k ? [k] : squadra).map((r) => k ? r : { ...r, fat: r.fat * squadra.length, prog: r.prog * squadra.length, vis: r.vis * squadra.length });
+  const rif = k ? serie(squadra) : null;
+  $("leg-and").innerHTML = k ? `<span style="--c:var(--serie-1)">${k}</span><span class="rif-l">Media per commerciale</span>` : "";
+  const kpi = [["fat", "Fatturato vinto", euro], ["prog", "Progetti", (x) => n(Math.round(x))], ["conv", "Conversione progetti → vinti", (x) => Math.round(x * 100) + "%"], ["vis", "Visite", (x) => n(Math.round(x))]];
+  const W = 300, H = 110, sx = 26, dx = 6, su = 8, giu = 18;
+  $("andamenti").innerHTML = kpi.map(([ch, tit, fmt]) => {
+    const val = mia.map((r) => r[ch]), vr = rif ? rif.map((r) => r[ch]) : [];
+    const max = Math.max(...val, ...vr) * 1.1 || 1;
+    const X = (i) => sx + (i * (W - sx - dx)) / 11, Y = (v) => su + (1 - v / max) * (H - su - giu);
+    const tratto = (vv) => vv.map((v, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1)).join(" ");
+    const tacche = [0, max / 2].map((t) => `<line class="griglia-l" x1="${sx}" x2="${W - dx}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${sx - 4}" y="${Y(t) + 3}" text-anchor="end">${ch === "fat" ? Math.round(t / 1000) + "k" : ch === "conv" ? Math.round(t * 100) + "%" : Math.round(t)}</text>`).join("");
+    const etichette = MESI.map((m, i) => i % 2 ? "" : `<text x="${X(i)}" y="${H - 4}" text-anchor="middle">${m}</text>`).join("");
+    const zone = MESI.map((m, i) => `<rect class="zona" x="${X(i) - (W - sx - dx) / 22}" y="0" width="${(W - sx - dx) / 11}" height="${H}" data-tip="<b>${m} ${i < 3 ? 2025 : 2026}</b><br>${k || "Squadra"}: ${fmt(val[i])}${rif ? "<br>Media: " + fmt(vr[i]) : ""}"/>`).join("");
+    return `<div class="andamento"><h3>${tit} <span style="font-weight:400;color:var(--muto)">· set ${fmt(val[11])}</span></h3>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${tit}, ultimi 12 mesi">${tacche}${etichette}
+      ${rif ? `<path class="rif" d="${tratto(vr)}"/>` : ""}<path class="linea" d="${tratto(val)}"/>
+      <circle class="ultimo" cx="${X(11)}" cy="${Y(val[11])}" r="4"/>${zone}</svg></div>`;
+  }).join("");
+}
+
 function disegna() {
   const c = $("f-canale").value, a = $("f-area").value, k = $("f-comm").value, mesi = +$("f-periodo").value;
   const okBase = (r) => r.mese >= 12 - mesi && (!a || r.area === a) && (!k || r.comm === k);
@@ -164,10 +214,31 @@ function disegna() {
   const quo = P.filter((p) => p.quotato).length, vin = P.filter((p) => p.vinto).length;
   const fat = P.reduce((s, p) => s + p.valore, 0);
 
+  // Il confronto: gli stessi KPI per ogni commerciale, con gli stessi filtri tranne
+  // il commerciale. Il migliore cambia da un KPI all'altro, quindi si indica per ciascuno.
+  // Conversione e valore medio contano solo con almeno 5 progetti, sennò vince il caso.
+  const perComm = COMM.filter(([, ar]) => !a || ar === a).map(([nome]) => {
+    const p = progetti.filter((x) => x.comm === nome && x.mese >= 12 - mesi && (!c || x.canale === c));
+    const v = visite.filter((x) => x.comm === nome && x.mese >= 12 - mesi);
+    const vinti = p.filter((x) => x.vinto).length, f = p.reduce((t, x) => t + x.valore, 0);
+    return { nome, fat: f, prog: p.length, conv: p.length >= 5 ? vinti / p.length : null, medio: vinti >= 5 ? f / vinti : null, vis: v.reduce((t, x) => t + x.n, 0) };
+  });
+  const confronto = (chiave, fmt) => {
+    const validi = perComm.filter((r) => r[chiave] != null);
+    if (validi.length < 2) return "";
+    const top = validi.reduce((m, r) => (r[chiave] > m[chiave] ? r : m));
+    const media = validi.reduce((t, r) => t + r[chiave], 0) / validi.length;
+    if (k && top.nome === k) return `<div class="b"><b>Il migliore</b> · media ${fmt(media)}</div>`;
+    return `<div class="b">Migliore: <b>${top.nome} ${fmt(top[chiave])}</b> · media ${fmt(media)}</div>`;
+  };
+  const pcv = (x) => Math.round(x * 100) + "%";
   $("tessere").innerHTML = [
-    ["Fatturato vinto", euro(fat)], ["Progetti", n(P.length)], ["Conversione progetti → vinti", pc(vin, P.length)],
-    ["Valore medio vinto", vin ? euro(fat / vin) : "–"], ["Visite", n(vis)],
-  ].map(([e, v]) => `<div class="tessera"><div class="e">${e}</div><div class="v">${v}</div></div>`).join("");
+    ["Fatturato vinto", euro(fat), confronto("fat", euro)], ["Progetti", n(P.length), confronto("prog", (x) => n(Math.round(x)))],
+    ["Conversione progetti → vinti", pc(vin, P.length), confronto("conv", pcv)],
+    ["Valore medio vinto", vin ? euro(fat / vin) : "–", confronto("medio", euro)], ["Visite", n(vis), confronto("vis", (x) => n(Math.round(x)))],
+  ].map(([e, v, b]) => `<div class="tessera"><div class="e">${e}</div><div class="v">${v}</div>${b}</div>`).join("");
+
+  disegnaAndamenti(c, a, k);
 
   const passi = [["Visite", vis], ["Contatti", con], ["Progetti", P.length], ["Quotati", quo], ["Vinti", vin]];
   $("funnel").innerHTML = passi.map(([e, v], i) => {
