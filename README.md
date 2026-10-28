@@ -64,3 +64,7 @@ Da chiarire con Gabriele: se usano Dynamics 365 Sales o un altro modulo, chi
 pagherebbe il pilota e quante ore.
 
 Il sito si ricostruisce solo quando cambia questa cartella.
+
+## Dove sta
+
+Dal 28/10/2026 il progetto ha un repo suo (`darioricci1/dashboard-tappeti`), uscito da culla con tutta la storia; il sito Vercel `ferreira-funnel` si costruisce da qui.
